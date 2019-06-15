@@ -3,6 +3,7 @@
 
 class Router
 {
+
     /**
      * Associative array of routes (the routing table)
      * @var array
@@ -18,13 +19,22 @@ class Router
     /**
      * Add a route to the routing table
      *
-     * @param string $route The route URL
-     * @param array $params Parameters (controller, action, etc.)
+     * @param string $route  The route URL
+     * @param array  $params Parameters (controller, action, etc.)
      *
      * @return void
      */
-    public function add($route, $params)
+    public function add($route, $params = [])
     {
+        // Convert the route to a regular expression: escape forward slashes
+        $route = preg_replace('/\//', '\\/', $route);
+
+        // Convert variables e.g. {controller}
+        $route = preg_replace('/\{([a-z]+)\}/', '(?P<\1>[a-z-]+)', $route);
+
+        // Add start and end delimiters, and case insensitive flag
+        $route = '/^' . $route . '$/i';
+
         $this->routes[$route] = $params;
     }
 
@@ -48,30 +58,23 @@ class Router
      */
     public function match($url)
     {
-        /*
+        // Match to the fixed URL format /controller/action
+        //$reg_exp = "/^(?P<controller>[a-z-]+)\/(?P<action>[a-z-]+)$/";
+
         foreach ($this->routes as $route => $params) {
-            if ($url == $route) {
+            if (preg_match($route, $url, $matches)) {
+                // Get named capture group values
+                //$params = [];
+
+                foreach ($matches as $key => $match) {
+                    if (is_string($key)) {
+                        $params[$key] = $match;
+                    }
+                }
+
                 $this->params = $params;
                 return true;
             }
-        }
-        */
-
-        // Match to the fixed URL format /controller/action
-        $reg_exp = "/^(?P<controller>[a-z-]+)\/(?P<action>[a-z-]+)$/";
-
-        if (preg_match($reg_exp, $url, $matches)) {
-            // Get named capture group values
-            $params = [];
-
-            foreach ($matches as $key => $match) {
-                if (is_string($key)) {
-                    $params[$key] = $match;
-                }
-            }
-
-            $this->params = $params;
-            return true;
         }
 
         return false;
@@ -86,5 +89,4 @@ class Router
     {
         return $this->params;
     }
-
 }
